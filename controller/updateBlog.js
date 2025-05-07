@@ -7,34 +7,43 @@ const updateBlog = asyncErrorhandle(async (req, res) => {
   const { id } = req.params;
   const file = req.file;
   const userExist = await Blog.findById(id);
-
+  let uploadedData;
   if (file) {
-    await cloudinary.uploader.destroy(
-      userExist?.public_id,
-      {
-        resource_type: "image",
-      },
-      (err) => {
-        if (err) {
-          res
-            .status(500)
-            .json({ message: "Image not deleted, try again", success: false });
+    if (userExist?.public_id) {
+      await cloudinary.uploader.destroy(
+        userExist?.public_id,
+        {
+          resource_type: "image",
+        },
+        (err) => {
+          if (err) {
+            res.status(500).json({
+              message: "Image not deleted, try again",
+              success: false,
+            });
+          }
+          return;
         }
-        return;
-      }
-    );
-  }
-  const { secure_url, public_id } = await uploadFile(file?.path);
-  if (!secure_url) {
-    res.status(500).json({
-      success: false,
-      message: "profile picture upoaded failed, try again !",
+      );
+    }
+    uploadedData = await uploadFile(file?.path).catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: "profile picture upoaded failed, try again !",
+      });
+      return;
     });
-    return;
   }
+
   const response = await Blog.findByIdAndUpdate(
     id,
-    { title, content, author, profile_url: secure_url, public_id },
+    {
+      title,
+      content,
+      author,
+      profile_url: uploadedData?.secure_url || userExist?.profile_url,
+      public_id: uploadedData?.public_id || userExist?.public_id,
+    },
     { new: true }
   );
   if (!response) {

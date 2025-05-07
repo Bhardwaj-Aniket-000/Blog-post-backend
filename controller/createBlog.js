@@ -5,22 +5,23 @@ const { uploadFile } = require("../config/cloudinary");
 const createBlog = asyncErrorhandle(async (req, res) => {
   const { title, content, author } = req.body;
   const file = req.file;
-
-  const { secure_url, public_id } = await uploadFile(file?.path);
-  if (!secure_url) {
-    res.json({
-      success: false,
-      message: "profile picture upoaded failed, try again !",
+  let uploadedData;
+  if (file) {
+    uploadedData = await uploadFile(file?.path).catch((err) => {
+      res.status(500).json({
+        success: false,
+        message: "profile picture upoaded failed, try again !",
+      });
+      return;
     });
-    return;
   }
 
   const response = await Blog.create({
     title,
     content,
     author,
-    profile_url: secure_url,
-    public_id,
+    profile_url: uploadedData?.secure_url || "",
+    public_id: uploadedData?.public_id || "",
   });
   if (!response) {
     res

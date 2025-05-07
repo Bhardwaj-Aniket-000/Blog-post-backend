@@ -10,7 +10,6 @@ cloudinary.config({
 const uploadFile = async (filePath) => {
   try {
     const response = await cloudinary.uploader.upload(filePath);
-    console.log(response);
     return response;
   } catch (error) {
     console.log(error);
